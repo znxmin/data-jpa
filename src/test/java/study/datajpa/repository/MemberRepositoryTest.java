@@ -1,5 +1,6 @@
 package study.datajpa.repository;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -84,5 +85,19 @@ class MemberRepositoryTest {
 
         List<Member> result = memberRepository.findByUsername("minjeong");
         assertThat(result.size()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("findUser - @Query 리포지토리 메서드에 정의한 JPQL 쿼리 테스트")
+    public void findUserTest() {
+        Member member1 = new Member("minjeong", 10);
+        Member member2 = new Member("minjeong", 20);
+        Member member3 = new Member("minjeong", 30);
+        memberRepository.save(member1);
+        memberRepository.save(member2);
+        memberRepository.save(member3);
+
+        List<Member> result = memberRepository.findUser("minjeong", 20);
+        assertThat(result.size()).isEqualTo(1);
     }
 }
