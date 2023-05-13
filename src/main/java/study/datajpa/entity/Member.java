@@ -4,6 +4,10 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
+@NamedQuery(
+        name = "Member.findByUsername",
+        query = "select m from Member m where m.username = :username"
+)
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -12,13 +16,13 @@ public class Member {
 
     @Id
     @GeneratedValue
-    @Column(name="member_id")
+    @Column(name = "member_id")
     private Long id;
     private String username;
     private int age;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="team_id")
+    @JoinColumn(name = "team_id")
     private Team team;
 
     public Member(String username) {
