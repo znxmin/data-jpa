@@ -6,6 +6,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 import study.datajpa.dto.MemberDto;
 import study.datajpa.entity.Member;
@@ -191,5 +194,35 @@ class MemberRepositoryTest {
         assertThatThrownBy(
                 () -> memberRepository.findOptionalByUsername("minjeong")
         ).isNotInstanceOf(NonUniqueResultException.class);
+    }
+
+    @Test
+    @DisplayName("페이징 조건과 정렬 조건 설정")
+    void page() {
+        // given
+        memberRepository.save(new Member("member1", 10));
+        memberRepository.save(new Member("member2", 10));
+        memberRepository.save(new Member("member3", 10));
+        memberRepository.save(new Member("member4", 10));
+        memberRepository.save(new Member("member5", 10));
+
+        // when
+        // PageRequest는 Pageable의 구현체
+        PageRequest pageRequest = PageRequest.of(0, 3, Sort.by(Sort.Direction.DESC, "username"));
+        Page<Member> page = memberRepository.findByAge(10, pageRequest);
+        // 메서드 실행 결과에 대한 반환 타입을 Page로 정의하면 스프링 데이터 JPA가 알아서 카운트 쿼리 날림
+
+        // then
+        // page = 전체 데이터, content = 조회된 데이터
+        List<Member> content = page.getContent();                       // 조회된 데이터
+        assertThat(content.size()).isEqualTo(3);               // 조회된 데이터 수
+        assertThat(page.getTotalElements()).isEqualTo(5);      // 전체 데이터 수
+        assertThat(page.getNumber()).isEqualTo(0);             // 페이지 번호
+        assertThat(page.getTotalPages()).isEqualTo(2);         // 전체 페이지 번호
+        assertThat(page.isFirst()).isTrue();                            // 첫 페이지인가
+        assertThat(page.hasNext()).isTrue();                            // 다음 페이지가 있는가
+
+        // Json 응답 시 반환 타입은 Entity -> DTO로 변환 필수
+        Page<MemberDto> dtoPage = page.map(m -> new MemberDto(m.getId(), m.getUsername(), m.getTeam().getName()));
     }
 }
