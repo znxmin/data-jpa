@@ -1,9 +1,11 @@
 package study.datajpa.repository;
 
+import jakarta.persistence.NonUniqueResultException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.transaction.annotation.Transactional;
 import study.datajpa.dto.MemberDto;
 import study.datajpa.entity.Member;
@@ -13,6 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @Transactional
@@ -156,5 +159,37 @@ class MemberRepositoryTest {
             System.out.println("member = " + member);
             assertThat(member.getAge()).isEqualTo(10);
         }
+    }
+
+    @Test
+    @DisplayName("단건 조회 시 조회 결과 없을 경우 null 리턴")
+    void findMembersNoResultTest() {
+        Member member1 = new Member("minjeong", 10);
+        Member member2 = new Member("minjeong", 20);
+        memberRepository.save(member1);
+        memberRepository.save(member2);
+
+        // 단건 조회시 결과가 없을 경우 JPA는 javax.persistence.NoResultException 예외를 던짐
+        // JPA가 발생시킨 예외를 Spring 데이터 JPA가 무시하고 null로 반환
+        assertThat(memberRepository.findMembers("limminjeong")).isEqualTo(null);
+    }
+
+    @Test
+    @DisplayName("단건 조회에서 2개 이상의 결과 리턴될 경우 예외 발생")
+    void findOptionalByUsernameTest() {
+        Member member1 = new Member("minjeong", 10);
+        Member member2 = new Member("minjeong", 20);
+        memberRepository.save(member1);
+        memberRepository.save(member2);
+
+        // JPA에서 발생시킨 예외를 Spring 데이터 JPA가 스프링 예외로 추상화해서 던짐
+        // NonUniqueResultException -> IncorrectResultSizeDataAccessException
+        assertThatThrownBy(
+                () -> memberRepository.findOptionalByUsername("minjeong")
+        ).isInstanceOf(IncorrectResultSizeDataAccessException.class);
+
+        assertThatThrownBy(
+                () -> memberRepository.findOptionalByUsername("minjeong")
+        ).isNotInstanceOf(NonUniqueResultException.class);
     }
 }
