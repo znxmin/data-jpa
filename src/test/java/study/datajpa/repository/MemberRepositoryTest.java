@@ -9,8 +9,8 @@ import study.datajpa.dto.MemberDto;
 import study.datajpa.entity.Member;
 import study.datajpa.entity.Team;
 
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -134,5 +134,27 @@ class MemberRepositoryTest {
         List<MemberDto> memberDtos = memberRepository.findMemberDto();
         assertThat(memberDtos.get(0).getUsername()).isEqualTo(member.getUsername());
         assertThat(memberDtos.get(0).getTeamName()).isEqualTo(team.getName());
+    }
+
+    @Test
+    void findMembersTest() {
+        List<String> userNameList = Arrays.asList("memberA", "memberB", "memberC");
+        userNameList.forEach(userName -> memberRepository.save(new Member(userName, 10)));
+
+        Member memberA = memberRepository.findMembers("memberA");
+        assertThat(memberA.getUsername()).isEqualTo("memberA");
+        assertThat(memberA.getAge()).isEqualTo(10);
+    }
+
+    @Test
+    public void findByNamesTest() {
+        List<String> userNameList = Arrays.asList("memberA", "memberB", "memberC");
+        userNameList.forEach(userName -> memberRepository.save(new Member(userName, 10)));
+
+        List<Member> members = memberRepository.findByNames(userNameList);
+        for (Member member : members) {
+            System.out.println("member = " + member);
+            assertThat(member.getAge()).isEqualTo(10);
+        }
     }
 }
