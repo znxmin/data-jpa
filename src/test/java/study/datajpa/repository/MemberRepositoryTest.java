@@ -225,4 +225,35 @@ class MemberRepositoryTest {
         // Json 응답 시 반환 타입은 Entity -> DTO로 변환 필수
         Page<MemberDto> dtoPage = page.map(m -> new MemberDto(m.getId(), m.getUsername(), m.getTeam().getName()));
     }
+
+    @Test
+    void bulkUpdate() {
+        // given
+        Member member1 = new Member("member1", 10);
+        Member member2 = new Member("member2", 20);
+        Member member3 = new Member("member3", 30);
+        Member member4 = new Member("member4", 40);
+        Member member5 = new Member("member5", 50);
+        memberRepository.save(member1);
+        memberRepository.save(member2);
+        memberRepository.save(member3);
+        memberRepository.save(member4);
+        memberRepository.save(member5);
+
+        // when
+        int resultCount = memberRepository.bulkAgePlus(20);
+
+        // then
+        assertThat(resultCount).isEqualTo(4);
+
+        // @Modifying의 clearAutomatically를 true로 지정해주지 않으면 기본 false
+        // 영속성 컨텍스트에 남아있는 엔티티의 상태와 DB에 벌크 연산이 수행된 이후의 엔티티의 상태가 다름
+        // 이 옵션 주지 않으면서 정상적으로 조회하려면 아래 2개 쿼리 실행 후 조회 필요
+        // em.flush();
+        // em.clear();
+        Member findMember = memberRepository.findMembers("member5");
+        // clearAutomatically 옵션과 상관 없이 member5의 나이는 업데이트되지 않음에 주의
+        // clearAutomatically = false이면 에러
+        assertThat(findMember.getAge()).isEqualTo(51);
+    }
 }
