@@ -332,4 +332,39 @@ class MemberRepositoryTest {
             System.out.println("member.team = " + member.getTeam().getName());
         }
     }
+
+    @Test
+    void queryHint() {
+        // given
+        Member member1 = new Member("member1", 10);
+        memberRepository.save(member1);
+        em.flush();
+        em.clear();
+
+        // when
+        Member findMember = memberRepository.findReadOnlyByUsername("member1");
+        findMember.setUsername("member2");
+
+        // 플러시 호출 시점에 변경 감지 동작하여 insert, update 쿼리 등이 DB로 전달되어 실행됨
+        // 여기서는 읽기 전용 객체로 가져왔기 때문에, 스냅샷 객체 생성 안하고 변겸 감지 안 하도록 최적화됨
+        // 플러시 호출해도 update 쿼리 실행 안 됨
+        em.flush();
+        em.clear();
+
+        assertThat(memberRepository.findMembers("member2")).isEqualTo(null);
+    }
+
+    @Test
+    void lock() {
+        // given
+        Member member1 = new Member("member1", 10);
+        memberRepository.save(member1);
+        em.flush();
+        em.clear();
+
+        // when
+        // select ~ from ~ where ~ for update 라고 쿼리가 나감
+        List<Member> members = memberRepository.findLockByUsername("member1");
+    }
+
 }
