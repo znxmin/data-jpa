@@ -1,5 +1,6 @@
 package study.datajpa.repository;
 
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.NonUniqueResultException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,9 @@ class MemberRepositoryTest {
 
     @Autowired
     TeamRepository teamRepository;
+
+    @Autowired
+    EntityManager em;
 
     @Test
     public void testMember() {
@@ -200,11 +204,13 @@ class MemberRepositoryTest {
     @DisplayName("페이징 조건과 정렬 조건 설정")
     void page() {
         // given
-        memberRepository.save(new Member("member1", 10));
-        memberRepository.save(new Member("member2", 10));
-        memberRepository.save(new Member("member3", 10));
-        memberRepository.save(new Member("member4", 10));
-        memberRepository.save(new Member("member5", 10));
+        Team teamA = new Team("teamA");
+        teamRepository.save(teamA);
+        memberRepository.save(new Member("member1", 10, teamA));
+        memberRepository.save(new Member("member2", 10, teamA));
+        memberRepository.save(new Member("member3", 10, teamA));
+        memberRepository.save(new Member("member4", 10, teamA));
+        memberRepository.save(new Member("member5", 10, teamA));
 
         // when
         // PageRequest는 Pageable의 구현체
@@ -255,5 +261,75 @@ class MemberRepositoryTest {
         // clearAutomatically 옵션과 상관 없이 member5의 나이는 업데이트되지 않음에 주의
         // clearAutomatically = false이면 에러
         assertThat(findMember.getAge()).isEqualTo(51);
+    }
+
+    @Test
+    void findMemberLazy() {
+        // given
+        Team teamA = new Team("teamA");
+        Team teamB = new Team("teamB");
+        teamRepository.save(teamA);
+        teamRepository.save(teamB);
+
+        Member memberA = new Member("memberA", 10, teamA);
+        Member memberB = new Member("memberB", 10, teamB);
+        memberRepository.save(memberA);
+        memberRepository.save(memberB);
+
+        em.flush();
+        em.clear();
+
+        // when - 1
+        List<Member> members = memberRepository.findAll();
+
+        // then
+        // 지연 로딩으로 인한 N + 1 문제 발생
+        // Team 엔티티는 프록시 객체로 생성되어 실제 호출될 때 조회 쿼리 실행되고 초기화됨
+        System.out.println("members = " + members);
+        for (Member member : members) {
+            System.out.println("member.teamClass = " + member.getTeam().getClass());
+            System.out.println("member.team = " + member.getTeam().getName());
+        }
+
+        em.flush();
+        em.clear();
+
+        // when - 2
+        // 페치 조인으로 N + 1 문제 해결
+        List<Member> members2 = memberRepository.findMemberFetchJoin();
+
+        // then
+        // 페치 조인으로 한 번에 조회하여 지연 로딩 X. N + 1 문제 발생 안 함
+        // Team 엔티티 프록시 객체로 생성되지 않음
+        System.out.println("members2 = " + members2);
+        for (Member member : members2) {
+            System.out.println("member.teamClass = " + member.getTeam().getClass());
+            System.out.println("member.team = " + member.getTeam().getName());
+        }
+
+        // when - 3
+        // @EntityGraph 사용하여 N + 1 문제 해결
+        // EntityGraph는 LEFT OUTER JOIN 사용하여 JPQL 없이도 페치 조인 적용 가능
+        List<Member> members3 = memberRepository.findMemberEntityGraph();
+
+        // EntityGraph 적용하여 지연 로딩 X. N + 1 문제 발생 안 함
+        // Team 엔티티 프록시 객체로 생성되지 않음
+        System.out.println("members3 = " + members3);
+        for (Member member : members3) {
+            System.out.println("member.teamClass = " + member.getTeam().getClass());
+            System.out.println("member.team = " + member.getTeam().getName());
+        }
+
+        // when - 4
+        // 엔티티에 정의한 @NamedEntityGraph를 리포지토리 메서드의 @EntityGraph에서 사용
+        List<Member> members4 = memberRepository.findEntityGraphByUsername("memberA");
+
+        // EntityGraph 적용하여 지연 로딩 X. N + 1 문제 발생 안 함
+        // Team 엔티티 프록시 객체로 생성되지 않음
+        System.out.println("members4 = " + members4);
+        for (Member member : members4) {
+            System.out.println("member.teamClass = " + member.getTeam().getClass());
+            System.out.println("member.team = " + member.getTeam().getName());
+        }
     }
 }
