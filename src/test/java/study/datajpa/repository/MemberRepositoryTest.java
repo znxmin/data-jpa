@@ -367,4 +367,10 @@ class MemberRepositoryTest {
         List<Member> members = memberRepository.findLockByUsername("member1");
     }
 
+    @Test
+    public void callCustom() {
+        // MemberRepository에 MemberRepositoryCustom(사용자 정의 인터페이스) 구현하겠다고 정의하면
+        // 사용자 정의 인터페이스를 구현한 MemberRepositoryCustomImpl(구현체)의 메서드를 실행
+        List<Member> result = memberRepository.findMemberCustom();
+    }
 }
