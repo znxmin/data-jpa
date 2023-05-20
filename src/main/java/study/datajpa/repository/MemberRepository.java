@@ -12,7 +12,7 @@ import study.datajpa.entity.Member;
 import java.util.List;
 import java.util.Optional;
 
-public interface MemberRepository extends JpaRepository<Member, Long>, MemberRepositoryCustom {
+public interface MemberRepository extends JpaRepository<Member, Long>, MemberRepositoryCustom, JpaSpecificationExecutor<Member> {
     List<Member> findByUsernameAndAgeGreaterThan(String username, int age);
 
     // @Query 생략하고 메서드 이름만으로 Named 쿼리 호출 가능 (메서드 이름으로 쿼리 생성 전략 사용)
