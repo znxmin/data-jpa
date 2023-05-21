@@ -425,4 +425,41 @@ class MemberRepositoryTest {
         // then
         assertThat(result.size()).isEqualTo(1);
     }
+
+    @Test
+    void testProjections() {
+        // given
+        Team teamA = new Team("teamA");
+        em.persist(teamA);
+
+        Member m1 = new Member("m1", 0, teamA);
+        Member m2 = new Member("m2", 0, teamA);
+        em.persist(m1);
+        em.persist(m2);
+
+        em.flush();
+        em.clear();
+
+        // when
+        // 인터페이스 기반 Projections
+        List<UsernameOnly> result = memberRepository.findProjectionsByUsername("m1");
+
+        // then
+        Assertions.assertThat(result.size()).isEqualTo(1);
+
+        // when
+        // 클래스 기반 Projection, 동적 Projections
+        List<UsernameOnlyDto> result2 = memberRepository.findProjectionsByUsername("m1", UsernameOnlyDto.class);
+
+        // then
+        Assertions.assertThat(result2.size()).isEqualTo(1);
+
+        // when
+        // 중첩 구조 처리
+        // 프로젝션 대상에 Team 엔티티가 있기 때문에 LEFT OUTER JOIN 처리되어 JPQL SELECT절 최적화 불가능
+        List<NestedClosedProjections> result3 = memberRepository.findProjectionsByUsername("m1", NestedClosedProjections.class);
+
+        // then
+        Assertions.assertThat(result3.size()).isEqualTo(1);
+    }
 }
